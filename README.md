@@ -11,4 +11,4 @@
 - Data visually
 
 ## License
-MIT
+- MIT
