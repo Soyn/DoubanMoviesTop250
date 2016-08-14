@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #-*-coding: utf-8 -*-
 
-from BeautifulSoup import BeautifulSoup
+
 '''
     @Author: Soyn.
     @Brief: A web spider to get the page.
@@ -9,6 +9,7 @@ from BeautifulSoup import BeautifulSoup
     All rights reserved.
 '''
 import re
+from collections import defaultdict
 
 class ExtractData(object):
     '''
@@ -30,12 +31,12 @@ class DoubanSpider(object):
         """
         self.current_page_number = 1
         self.seed = "https://movie.douban.com/top250?start={page}&filter="
-        self.movies_info = {}
+        self.movies_info = defaultdict(list)
         self.current_page_content = ''
         self.top_num = 1
         self.movies_links = []
         self.movies_names = []
-        self.top_num = 1
+        self.movies_rates = []
 
 
     def get_page(self):
@@ -46,10 +47,13 @@ class DoubanSpider(object):
         '''
         try:
             import requests
-            self.current_page_content = requests.get(self.seed.format(page
-                        =(self.current_page_number - 1) * 25)).text
+
+            self.current_page_content = requests.get(self.seed.format(
+                page = (self.current_page_number - 1) * 25)).text
         except:
-            return ''
+            print "import requests failed!"
+            return ""
+
 
     def get_links(self):
         '''
@@ -61,6 +65,7 @@ class DoubanSpider(object):
             from bs4 import BeautifulSoup
         except ImportError:
             from BeautifulSoup import BeautifulSoup
+
         soup = BeautifulSoup(self.current_page_content, 'lxml')
 
         # Extract the contents to get all the movies url
@@ -68,44 +73,67 @@ class DoubanSpider(object):
             for link in text.find_all('a'):
                 self.movies_links.append(link.get("href"))
 
+
     def get_movie_names(self):
         """
         @Brief: Get the movie's name from content of current web page
         :return:
         """
-        movies_item = re.findall(r'<span class="title">(.*?)</span>',self.current_page_content, re.S)
+        movies_item = re.findall(r'<span class="title">(.*?)</span>',
+                                self.current_page_content, re.S)
         for index, item in enumerate(movies_item):
             if item.find('&nbsp') == -1:
-                self.movies_names.append('Top ' + str(self.top_num) + ' ' + item)
-                self.top_num += 1
+                self.movies_names.append(item)
+
+    def get_movies_rate(self):
+        """
+        @Brief: Get the movies rate
+        :return: the movie rate
+        """
+        try:
+            from bs4 import BeautifulSoup
+        except ImportError:
+            from BeautifulSoup import BeautifulSoup
+
+        soup = BeautifulSoup(self.current_page_content, 'lxml')
+
+        for span in soup.findAll('span', attrs={'property':'v:average'}):
+            self.movies_rates.append(span.string)
 
     def merge_names_and_urls(self):
-        for movie_name, movie_url in zip(self.movies_names, self.movies_links):
-            self.movies_info[movie_name] = movie_url
+        """
+        @Brief: Merge the movie info
+        :return: void
+        """
+        for movie_name, movie_rate, movie_url in zip(self.movies_names,
+                self.movies_rates, self.movies_links):
+            self.movies_info[self.top_num].append(movie_name)
+            self.movies_info[self.top_num].append(movie_rate)
+            self.movies_info[self.top_num].append(movie_url)
+            self.top_num += 1
 
 
-    def start_spider(self, max_page_number):
+
+    def start_spider(self, max_page_number = 0):
         '''
         @Brief: Start the spider
         :param max_page_number:
         :return: return the movies info
         '''
         if max_page_number < 0:
-            max_page_number = 0
+            max_page_number = 0  # If maximum page number less than 0, default value is 0
         if max_page_number > 10:
-            max_page_number = 10
+            max_page_number = 10 # Alternatively above
+
         while self.current_page_number <= max_page_number:
             self.get_page()
             self.get_links()
             self.get_movie_names()
-            self.merge_names_and_urls()
+            self.get_movies_rate()
             self.current_page_number += 1
-
+        self.merge_names_and_urls()
         return_movies_info = self.movies_info
         return return_movies_info
-
-
-
 
 
         

@@ -9,16 +9,19 @@
 import sys
 sys.path.append("..")
 from douban_web_spider import DoubanSpider
+
 import time
 
-def TestCase():
+def test_case():
     test = DoubanSpider()
-    movies_info = test.start_spider(12)
-    for name in sorted(movies_info):
-        print name + ' ' + movies_info[name]
+    movies_info = test.start_spider(10)
+    for name in movies_info:
+        print str(name) + ': '
+        print movies_info[name][0]
+
 
 if __name__ == '__main__':
     start = time.time()
-    TestCase()
+    test_case()
     end = time.time()
     print "Running Time: ", end - start
