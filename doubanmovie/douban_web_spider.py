@@ -55,6 +55,7 @@ class DoubanSpider(object):
             return ""
 
 
+
     def get_links(self):
         '''
         @Brief: Get the links from content
@@ -112,7 +113,31 @@ class DoubanSpider(object):
             self.movies_info[self.top_num].append(movie_url)
             self.top_num += 1
 
+    def get_movies_distribute_country(self):
+        """
+        Get the distribute country of movie
+        :return:
+        """
+        try:
+            from bs4 import BeautifulSoup
+        except ImportError:
+            from BeautifulSoup import BeautifulSoup
 
+        soup = BeautifulSoup(self.current_page_content, 'lxml')
+
+        movies_div = soup.findAll('div', attrs={'class': 'bd'})
+
+        for div in movies_div:
+            element = div.find('p', attrs = {'class': ''})
+            if element:
+                string_element = str(element.text.encode('utf8'))
+                index_list = []
+                for i in range(2):
+                    index = string_element.rfind('/')
+                    string_element = string_element[0 : index]
+                    index_list.insert(0, index)
+                country = str(element.text.encode('utf8'))[index_list[0] + 1: index_list[1]]
+                self.movies_distribute_countries.append(country[0 : country.find(' ')])
 
     def start_spider(self, max_page_number = 0):
         '''
@@ -130,6 +155,7 @@ class DoubanSpider(object):
             self.get_links()
             self.get_movie_names()
             self.get_movies_rate()
+            self.get_movies_distribute_country()
             self.current_page_number += 1
         self.merge_names_and_urls()
         return_movies_info = self.movies_info
