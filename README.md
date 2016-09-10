@@ -3,7 +3,7 @@
 
 ## Note
 - Python 2.7.9
-- Requests and BeautifulSoup recommand
+- Requests and BeautifulSoup needed
 - Using sqlite3
 
 ## TODO
