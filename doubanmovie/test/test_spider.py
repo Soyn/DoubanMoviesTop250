@@ -15,9 +15,9 @@ import time
 def test_case():
     test = DoubanSpider()
     movies_info = test.start_spider(10)
-    for name in movies_info:
-        print str(name) + ': '
-        print movies_info[name][0]
+    for key in movies_info:
+        for item in movies_info[key]:
+            print item
 
 
 if __name__ == '__main__':
