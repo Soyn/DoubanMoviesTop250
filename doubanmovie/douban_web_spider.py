@@ -11,10 +11,6 @@
 import re
 from collections import defaultdict
 
-class ExtractData(object):
-    '''
-    @Brief: Extract data
-    '''
 
 class DoubanSpider(object):
     '''
@@ -37,7 +33,7 @@ class DoubanSpider(object):
         self.movies_links = []
         self.movies_names = []
         self.movies_rates = []
-
+        self.movies_distribute_countries = []
 
     def get_page(self):
         '''
@@ -53,7 +49,6 @@ class DoubanSpider(object):
         except:
             print "import requests failed!"
             return ""
-
 
 
     def get_links(self):
@@ -101,18 +96,6 @@ class DoubanSpider(object):
         for span in soup.findAll('span', attrs={'property':'v:average'}):
             self.movies_rates.append(span.string)
 
-    def merge_names_and_urls(self):
-        """
-        @Brief: Merge the movie info
-        :return: void
-        """
-        for movie_name, movie_rate, movie_url in zip(self.movies_names,
-                self.movies_rates, self.movies_links):
-            self.movies_info[self.top_num].append(movie_name)
-            self.movies_info[self.top_num].append(movie_rate)
-            self.movies_info[self.top_num].append(movie_url)
-            self.top_num += 1
-
     def get_movies_distribute_country(self):
         """
         Get the distribute country of movie
@@ -139,6 +122,22 @@ class DoubanSpider(object):
                 country = str(element.text.encode('utf8'))[index_list[0] + 1: index_list[1]]
                 self.movies_distribute_countries.append(country[0 : country.find(' ')])
 
+
+    def merge_names_and_urls(self):
+        """
+        @Brief: Merge the movie info
+        :return: void
+        """
+        for movie_name, movie_rate, movie_url, movies_distribute_country in zip(self.movies_names,
+                self.movies_rates, self.movies_links, self.movies_distribute_countries):
+            self.movies_info[self.top_num].append(movie_name)
+            self.movies_info[self.top_num].append(movie_rate)
+            self.movies_info[self.top_num].append(movie_url)
+            self.movies_info[self.top_num].append(movies_distribute_country)
+            self.top_num += 1
+
+
+
     def start_spider(self, max_page_number = 0):
         '''
         @Brief: Start the spider
@@ -160,6 +159,7 @@ class DoubanSpider(object):
         self.merge_names_and_urls()
         return_movies_info = self.movies_info
         return return_movies_info
+
 
 
         
