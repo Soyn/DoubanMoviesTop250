@@ -8,6 +8,8 @@
 '''
 import sqlite3
 import douban_web_spider
+import json
+import os
 
 class DBProcess(object):
     def __init__(self, db_file = 'dou_ban_movies_info.sqlite'):
@@ -36,10 +38,10 @@ class DBProcess(object):
                     {Rate} {RateType},
                     {DistributeCountry} {DistributeCountryType}
                 );
-            """.format(table_name=self.table_name, Rank =self.rank, RankType
+            """.format(table_name=self.table_name, Rank=self.rank, RankType
                 ='INTEGER', Name=self.name, NameType='TEXT',
                     Rate=self.rate, RateType='TEXT',
-                    DistributeCountry = self.distribute_country, DistributeCountryType = 'TEXT'))
+                    DistributeCountry=self.distribute_country, DistributeCountryType='TEXT'))
             conn.commit()
             conn.close()
             print "------Create table successfully!------"
@@ -55,11 +57,29 @@ class DBProcess(object):
         """
         conn = sqlite3.connect(self.db_file)
         cursor = conn.cursor()
-        spider = douban_web_spider.DoubanSpider()
-        movies_info = spider.start_spider(12)
+        movies_info_file = 'movies_info.json'
+
+        try:
+            file_stat = os.stat(movies_info_file)
+        except:
+            open(movies_info_file, 'w')
+            file_stat = os.stat(movies_info_file)
+
+        if not file_stat.st_size:
+            spider = douban_web_spider.DoubanSpider()
+            spider.start_spider(12)
+        else:
+            with open(movies_info_file) as data_file:
+                movies_info = json.load(data_file)
+            print movies_info
+
+
         for key in movies_info:
             params = (key, movies_info[key][0], movies_info[key][1], movies_info[key][3])
-            print movies_info[key][3]
+
+            for item in params:
+                print item
+
             cursor.execute("""
                 INSERT INTO dou_ban_movies_info (Rank, Name, Rate, DistributeCountry) VALUES
                 (?, ?, ?, ?)
@@ -68,3 +88,8 @@ class DBProcess(object):
         conn.close()
         print "----Insertion completes!----"
 
+
+if __name__ == '__main__':
+    test = DBProcess()
+    test.create_table()
+    test.insert_data()
