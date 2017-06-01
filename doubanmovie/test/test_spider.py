@@ -14,11 +14,7 @@ import time
 
 def test_case():
     test = DoubanSpider()
-    movies_info = test.start_spider(10)
-    for key in movies_info:
-        for item in movies_info[key]:
-            print item
-
+    movies_info = test.start_spider(12)
 
 if __name__ == '__main__':
     start = time.time()

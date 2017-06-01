@@ -12,7 +12,7 @@ import json
 import os
 
 class DBProcess(object):
-    def __init__(self, db_file = 'dou_ban_movies_info.sqlite'):
+    def __init__(self, db_file='../db/dou_ban_movies_info.sqlite'):
         self.db_file = db_file
         self.table_name = 'dou_ban_movies_info'
         self.name = 'Name'
@@ -57,7 +57,7 @@ class DBProcess(object):
         """
         conn = sqlite3.connect(self.db_file)
         cursor = conn.cursor()
-        movies_info_file = 'movies_info.json'
+        movies_info_file = '../db/movies_info.json'
 
         try:
             file_stat = os.stat(movies_info_file)
@@ -88,8 +88,3 @@ class DBProcess(object):
         conn.close()
         print "----Insertion completes!----"
 
-
-if __name__ == '__main__':
-    test = DBProcess()
-    test.create_table()
-    test.insert_data()

@@ -15,7 +15,8 @@ from bs4 import BeautifulSoup
 import requests
 import json
 import random
-
+import os
+from utils.util import set_time_interval
 reload(sys)
 sys.setdefaultencoding("utf-8")
 
@@ -41,6 +42,10 @@ class DoubanSpider(object):
         self._movies_names = []
         self._movies_rates = []
         self._movies_distribute_countries = []
+        self._ip_proxies = []
+        self._current_proxy_ip = ''
+        self._headers = {'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_0) '
+                                      'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.7 Safari/537.36'}
 
     def get_page_content(self):
         """
@@ -64,6 +69,13 @@ class DoubanSpider(object):
         :return: movies name
         """
         return self._movies_links
+    def select_random_ip_proxy(self):
+        ip_proxies_file = 'ip_proxies.json'
+        with open(ip_proxies_file, 'r') as ip_proxies:
+            self._ip_proxies = json.load(ip_proxies)
+        print len(self._ip_proxies)
+        self._current_proxy_ip = {'http', 'http://' + self._ip_proxies[random.randint(0, len(self._ip_proxies))]}
+
 
     def fetch_page_content(self):
         '''
@@ -71,13 +83,9 @@ class DoubanSpider(object):
         :param url: The url
         :return: the contents of url
         '''
-        ip_proxies_file = 'ip_proxies.json'
-        with open(ip_proxies_file, 'r') as ip_proxies:
-            ip_proxies = json.load(ip_proxies)
-        random_proxy = {'http', 'http://' + ip_proxies[random.randint(0, len(ip_proxies))]}
-        print random_proxy
+        print self._current_proxy_ip
         self._current_page_content = requests.get(self._seed.format(
-                page=(self._current_page_number - 1) * 25), proxies=random_proxy).text
+                page=(self._current_page_number - 1) * 25), proxies=self._current_proxy_ip, headers=self._headers).text
 
 
     def parse_content_to_get_link(self):
@@ -90,10 +98,8 @@ class DoubanSpider(object):
             soup = BeautifulSoup(self._current_page_content, 'lxml')
             # Extract the contents to get all the movies url
             for text in soup.find_all(attrs={'class': 'info'}):
-                print text
                 for link in text.find_all('a'):
                     print 'Insert the movie link......'
-                    print link
                     self._movies_links.append(link.get("href"))
         else:
             print 'Page contents is blank!'
@@ -136,9 +142,13 @@ class DoubanSpider(object):
             self.parse_content_to_get_link()
         links = self._movies_links
         for link in links:
+            set_time_interval(1, 2)
             print "Insert distribute country......"
-            content = requests.get(link).text.decode('utf-8')
+            content = requests.get(link, proxies=self._current_proxy_ip, headers=self._headers).text.decode('utf-8')
             distribute_country = re.findall(u'<span class="pl">制片国家/地区:</span>(.*?)<br/>', content, re.S)
+            if not distribute_country:
+                print content
+                print link
             country = ''
             for item in distribute_country:
                 if country:
@@ -172,10 +182,11 @@ class DoubanSpider(object):
         if max_page_number < 0:
             max_page_number = 0  # If maximum page number less than 0, default value is 0
         if max_page_number > 10:
-            max_page_number = 10 # Alternatively above
+            max_page_number = 10  # Alternatively above
 
         while self._current_page_number <= max_page_number:
             self.fetch_page_content()
+            set_time_interval(1, 2)  # set suspend time to avoid block
             self.parse_content_to_get_link()
             self.parse_content_to_get_movie_names()
             self.parse_content_to_get_movie_rate()
@@ -183,23 +194,14 @@ class DoubanSpider(object):
             self._current_page_number += 1
         self.merge_names_and_urls()
 
+        self.generate_json_data()
+
     def generate_json_data(self):
+        print 'Generating movies info file......'
         if self._movies_info:
-            with open('movies_info.json', 'w') as fp:
+            with open('../db/movies_info.json', 'w') as fp:
                 json.dump(self._movies_info, fp)
         else:
             print "Info is empty!"
 
-if __name__ == '__main__':
-    test = DoubanSpider()
-    test.start_spider()
-    test.generate_json_data()
-    content = requests.get('https://movie.douban.com/subject/1307315/').text.decode('utf-8')
-    #distribute_country = re.findall(u'<span class="pl">制片国家/地区:</span>(.*?)<br/>', content, re.S)
-    #for item in distribute_country:
-        #print item
-    #test.fetch_page_content()
-    #test.parse_content_to_get_link()
-    #links = test.get_movies_link()
-    #for link in links:
-        #print link
+
